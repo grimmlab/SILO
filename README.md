@@ -40,7 +40,6 @@ To run SILO on a single task, please run the command with following command-line
 python active_loop.py --task task_name
 ```
 
-```
 | Argument             | Type  | Description                                                                 |
 |----------------------|-------|-----------------------------------------------------------------------------|
 | `--task`             | str   | Name of the 8 available protein fitness benchmark tasks. Defaults to AMIE. |
@@ -51,8 +50,6 @@ python active_loop.py --task task_name
 | `--low_data_perc`    | float | Fraction of initial data used for proxy training. Defaults to `1.0`.       |
 | `--noise_mode`       | bool  | Enable noisy proxy setup for SILO. Defaults to `False`.                    |
 | `--noise_level`      | int   | Noise level added to proxy predictions. Defaults to `0`.                   |
-
-```
 
 ### Noisy setting  
 To run SILO under a noisy surrogate setting for AMIE and E4B under noise levels -5, -10, -25, please run the following command:
@@ -110,8 +107,8 @@ This variable will be set as the env var of the same name in each worker. Defaul
 
 ## Acknowledgments
 
-Thanks to the following repositories: <br />
-    - [gumbeldore](https://github.com/grimmlab/gumbeldore) <br />
-    - [ProSpero] (https://github.com/szczurek-lab/ProSpero.git) for providing datasets and oracle models <br />
-    - [Flash-attention] (https://github.com/Dao-AILab/flash-attention.git)<br />
-    - [stochastic-beam-search] (https://github.com/wouterkool/stochastic-beam-search/tree/stochastic-beam-search)
+This project builds from several open-source repositories:
+- [Gumbeldore](https://github.com/grimmlab/gumbeldore) — for providing implementations related to incremental stochastic beam search, dataset sampling, and candidate generation.
+- [ProSpero](https://github.com/szczurek-lab/ProSpero.git) — for providing benchmark datasets and oracle models used in protein fitness optimization experiments.
+- [FlashAttention](https://github.com/Dao-AILab/flash-attention.git) — for efficient attention implementations used during model training and inference.
+- [Stochastic Beam Search](https://github.com/wouterkool/stochastic-beam-search/tree/stochastic-beam-search) — for reference implementations and methodology related to stochastic beam search.
