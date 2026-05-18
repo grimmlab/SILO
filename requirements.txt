@@ -1,0 +1,24 @@
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.8.0+cu128
+torchaudio==2.8.0+cu128
+torchvision==0.23.0+cu128
+torchdata
+torchtext
+torchtune
+flash_attn @ https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp310-cp310-linux_x86_64.whl#sha256=75c51f34bb93c5a4438d6b767547ca6c22a9bfc6b29b5646dda98e943cd75d99
+numpy==1.26.4
+ray==2.50.0
+tqdm==4.67.1
+requests==2.32.5
+pandas==2.2.2
+scikit-learn==1.5.2
+matplotlib==3.9.4
+scipy==1.15.3
+biotite==1.2.0
+transformers==4.48.1
+fair-esm==2.0.0
+biopython==1.85 
+ninja==1.13.0
+tape-proteins== 0.5
+esm==3.2.1.post1
+gdown
