@@ -1,5 +1,3 @@
-# Anonymous implementation for NeurIPS 2026 submission.
-
 # SILO: Self-Improvement Imitation with Biologically Guided Search for Protein Design Under Oracle Budgets
 Configurations of our system:
 - GPU: NVIDIA A40
