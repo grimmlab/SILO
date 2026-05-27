@@ -88,7 +88,7 @@ class MetricsTracker:
     def calculate_top_metrics(self, epoch, trajectories):
 
         new_sequences, new_scores = self.add_records(trajectories)
-        indices = np.argsort(self.collected_scores)[::-1][:self.config.self_improvement_learning['num_trajectories_to_keep']]
+        indices = np.argsort(self.collected_scores)[::-1][:100]
         top_sequences = np.array(self.collected_sequences)[indices]
         top_scores = np.array(self.collected_scores)[indices]
         
@@ -233,70 +233,89 @@ def train_for_one_epoch_active_cycle(epoch: int, config: SequenceConfig, network
         
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0, pin_memory=False, 
                                 persistent_workers=False)
-
-        # Train for one epoch
-        network.train()
-        accumulated_loss_lvl_zero = 0
-        accumulated_loss_lvl_one = 0
-
-        num_batches = len(dataloader)
-        progress_bar = tqdm(range(num_batches))
-        data_iter = iter(dataloader)
+        
         scaler = torch.amp.GradScaler()
+        criterion = CrossEntropyLoss(reduction="mean", ignore_index=-1)
 
-        for _ in progress_bar:
-            data = next(data_iter)
-            input_data = {k: v[0].to(network.device) for k, v in data["input"].items()}
-            
-            # targets for the logit levels
-            target_zero = data["target_zero"][0].to(network.device)
-            target_one = data["target_one"][0].to(network.device)
+        epoch_losses = []
+        epoch_losses_zero = []
+        epoch_losses_one = []
 
-            with autocast(device_type=config.training_device, dtype=torch.bfloat16): 
+
+        # Train for 50 epochs 
+        for epoch in range(config.num_epochs):
+            network.train()
+
+            accumulated_loss_lvl_zero = 0
+            accumulated_loss_lvl_one = 0
+            accumulated_total_loss = 0
+
+            num_batches = len(dataloader)
+            progress_bar = tqdm(range(num_batches))
+            data_iter = iter(dataloader)
+
+            for _ in progress_bar:
+                data = next(data_iter)
+                input_data = {k: v[0].to(network.device) for k, v in data["input"].items()}
                 
-                logits_zero, logits_one = network(input_data)
+                # targets for the logit levels
+                target_zero = data["target_zero"][0].to(network.device)
+                target_one = data["target_one"][0].to(network.device)
 
-                # We mask the output according to feasibility
-                logits_zero[input_data["feasibility_mask_level_zero"]] = float("-inf")
-                
-                # loss is calculated only for the logits of the selected position
-                B = logits_one.size(0)
-                batch_idx = torch.arange(B, device=logits_one.device)
-                
-                selected_pos = input_data["batch_selected_position"].squeeze(0)
-                logits_one_for_selected_position = logits_one[batch_idx, selected_pos] 
-                logits_one_for_selected_position[input_data["feasibility_mask_level_one"]] = float("-inf")
+                # Optimization step
+                optimizer.zero_grad(set_to_none=True)
 
-                criterion = CrossEntropyLoss(reduction="mean", ignore_index=-1)
-                loss_zero = criterion(logits_zero, target_zero)
-                loss_zero = torch.tensor(0.) if torch.isnan(loss_zero) else loss_zero
-                
-                loss_one = criterion(logits_one_for_selected_position, target_one)
-                loss_one = torch.tensor(0.) if torch.isnan(loss_one) else loss_one
-                loss = loss_zero + loss_one  
+                with autocast(device_type=config.training_device, dtype=torch.bfloat16): 
+                    
+                    logits_zero, logits_one = network(input_data)
 
-            # Optimization step
-            optimizer.zero_grad(set_to_none=True)
-            scaler.scale(loss).backward()
+                    # We mask the output according to feasibility
+                    logits_zero[input_data["feasibility_mask_level_zero"]] = float("-inf")
+                    
+                    # loss is calculated only for the logits of the selected position
+                    B = logits_one.size(0)
+                    batch_idx = torch.arange(B, device=logits_one.device)
+                    
+                    selected_pos = input_data["batch_selected_position"].squeeze(0)
+                    logits_one_for_selected_position = logits_one[batch_idx, selected_pos] 
+                    logits_one_for_selected_position[input_data["feasibility_mask_level_one"]] = float("-inf")
 
-            if config.optimizer["gradient_clipping"] > 0:
-                torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=config.optimizer["gradient_clipping"])
+                    loss_zero = criterion(logits_zero, target_zero)
+                    loss_zero = torch.tensor(0.) if torch.isnan(loss_zero) else loss_zero
+                    
+                    loss_one = criterion(logits_one_for_selected_position, target_one)
+                    loss_one = torch.tensor(0.) if torch.isnan(loss_one) else loss_one
+                    loss = loss_zero + loss_one  
 
-            scaler.step(optimizer)
+                scaler.scale(loss).backward()
+                if config.optimizer["gradient_clipping"] > 0:
+                    torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=config.optimizer["gradient_clipping"])
 
-            # Updates the scale for next iteration.
-            scaler.update()
+                scaler.step(optimizer)
 
-            batch_loss = loss.item()
-            accumulated_loss_lvl_zero += loss_zero.item()
-            accumulated_loss_lvl_one += loss_one.item()
+                # Updates the scale for next iteration.
+                scaler.update()
 
-            progress_bar.set_postfix({"batch_loss": batch_loss})
+                accumulated_total_loss += loss.item()
+                accumulated_loss_lvl_zero += loss_zero.item()
+                accumulated_loss_lvl_one += loss_one.item()
+
+            epoch_loss = accumulated_total_loss / num_batches
+            epoch_loss_zero = accumulated_loss_lvl_zero / num_batches
+            epoch_loss_one = accumulated_loss_lvl_one / num_batches
+
+            epoch_losses.append(epoch_loss)
+            epoch_losses_zero.append(epoch_loss_zero)
+            epoch_losses_one.append(epoch_loss_one)
+
+            print(f"Epoch {epoch+1}/{config.num_epochs} | " f"total_loss={epoch_loss:.4f}")
 
             del data 
 
-        metrics["loss_level_zero"] = accumulated_loss_lvl_zero / num_batches
-        metrics["loss_level_one"] = accumulated_loss_lvl_one / num_batches
+        metrics["loss_level_zero"] = epoch_losses_zero[-1]
+        metrics["loss_level_one"] = epoch_losses_one[-1]
+        metrics["total_loss"] = epoch_losses[-1]
+
         del metrics["top_20_sequences"]
 
         return metrics, top_trajectories
