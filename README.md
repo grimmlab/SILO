@@ -1,4 +1,8 @@
 # SILO: Self-Improvement Imitation with Biologically Guided Search for Protein Design Under Oracle Budgets
+
+This is the repository for the following paper: [Self-Improvement Imitation with Biologically Guided Search for Protein Design Under Oracle Budgets](https://arxiv.org/abs/2605.26690) (arXiv:2605.26690).
+
+## Configuration
 Configurations of our system:
 - GPU: NVIDIA A40
 - CUDA: 12.2
