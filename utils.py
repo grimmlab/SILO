@@ -242,7 +242,7 @@ def train_for_one_epoch_active_cycle(epoch: int, config: SequenceConfig, network
         epoch_losses_one = []
 
 
-        # Train for 50 epochs 
+        # Train for n epochs 
         for epoch in range(config.num_epochs):
             network.train()
 
