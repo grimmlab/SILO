@@ -51,6 +51,7 @@ class SequenceConfig:
         self.num_dataloader_workers = 3  # Number of workers for creating batches for training
         self.CUDA_VISIBLE_DEVICES = "0,1"  # Must be set, as ray can have problems detecting multiple GPUs
         self.batch_size_training = 16
+        self.num_epochs = 1
         self.num_batches_per_epoch = None  # Can be None, then we just do one pass through generated dataset
 
         # Optimizer for policy 
