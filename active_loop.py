@@ -128,10 +128,7 @@ def main(args):
             network.parameters(),
             lr=config.optimizer["lr"],
             weight_decay=config.optimizer["weight_decay"])
-
-    print("Setting up LR scheduler for policy")
-    _lambda = lambda epoch: config.optimizer["schedule"]["decay_factor"] ** (checkpoint["epochs_trained"] // config.optimizer["schedule"]["decay_lr_every_epochs"])
-    scheduler = LambdaLR(optimizer, lr_lambda=_lambda)
+    
     remaining_oracle_calls = config.self_improvement_learning['max_oracle_calls_per_round'] * config.active_learn_cycles
     oracle_evaluted_sequences = []
 
