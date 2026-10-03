@@ -184,7 +184,8 @@ class IncrementalSBS:
                  child_transition_fn: Callable[[List[Tuple[sbs.State, int]]], List[Tuple[sbs.State, bool]]],
                  leaf_evaluation_fn: Optional[Callable[[sbs.State], float]] = None,
                  batch_leaf_evaluation_fn: Optional[Callable[[List[sbs.State]], np.array]] = None,
-                 memory_aggressive: bool = False):
+                 memory_aggressive: bool = False,
+                 root_rngs: Optional[List[np.random.Generator]] = None):
         """
         Parameters:
             initial_states: List of initial states used as root nodes.
@@ -209,7 +210,14 @@ class IncrementalSBS:
             memory_aggressive [bool]: If this is True, the internal states in the search tree are erased after passing them,
                 thus on the one hand needing to re-transition to them when passing them again, but on the other hand
                 saving memory.
+
+            root_rngs: One generator per initial state. The generators retain their state across
+                incremental rounds and repeated calls, including when other roots are exhausted.
+                Omit to retain the global NumPy RNG behavior.
         """
+        if root_rngs is not None and len(root_rngs) != len(initial_states):
+            raise ValueError("root_rngs must contain one generator per initial state")
+        self.root_rngs = None if root_rngs is None else list(root_rngs)
         # A node will always be a tuple (_TrieNode, sbs.State).
         self.root_nodes = [
             (_TrieNode(None, None), state)
@@ -262,7 +270,10 @@ class IncrementalSBS:
                 beam_width=beam_width,
                 deterministic=False,
                 top_p=nucleus_top_p,
-                keep_intermediate=sbs_keep_intermediate
+                keep_intermediate=sbs_keep_intermediate,
+                root_rngs=None if self.root_rngs is None else [
+                    self.root_rngs[i] for i in unexhausted_root_idcs
+                ]
             )
 
             # Update probabilities and remove _TrieNode parts of the leaves.
