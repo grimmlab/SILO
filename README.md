@@ -1,6 +1,15 @@
 # SILO: Self-Improvement Imitation with Biologically Guided Search for Protein Design Under Oracle Budgets
 
-This is the repository for the following paper: [Self-Improvement Imitation with Biologically Guided Search for Protein Design Under Oracle Budgets](https://arxiv.org/abs/2605.26690) (arXiv:2605.26690).
+<p align="center">
+  <img src="figure/SILO_workflow.png" width="900">
+</p>
+<p align="center">
+</p>
+
+Official repository for the NeurIPS 2026 paper: 
+> **Self-Improvement Imitation with Biologically Guided Search for Protein Design Under Oracle Budgets**  
+> *Accepted at NeurIPS 2026*  
+> [Read the paper on arXiv](https://arxiv.org/abs/2605.26690)
 
 ## Configuration
 Configurations of our system:
@@ -10,7 +19,6 @@ Configurations of our system:
 
 Note:
 Running on H100 GPUs may require newer CUDA/PyTorch builds and updated NVIDIA libraries 
-
 Run protein sequence optimization using our framework SILO.
 
 ## Installation
