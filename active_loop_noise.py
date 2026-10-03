@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument("--task",
                         type=str,
                         default = 'AMIE',
-                        choices=["AMIE", "E4B"],
+                        choices=["AMIE", "E4B", "GFP", "AAV"],
                         help="Specify benchmark task.")
     parser.add_argument("--seed",
                         type=int,
@@ -67,7 +67,7 @@ def main(args):
 
     logger = Logger(config, config.results_path, config.log_to_file)
     logger.log_hyperparams(config)
-    set_seed(config.seed)
+    set_seed(config.seed, full_deterministic=True)
     esm3_model = ESM3(config)
     sequence_evaluator = SequenceEvaluator(config)
     seen_protein_smiles: dict[str, float] = {}
