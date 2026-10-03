@@ -208,7 +208,9 @@ def train_for_one_epoch_active_cycle(epoch: int, config: SequenceConfig, network
                                            seen_protein_smiles=seen_protein_smiles, proxy=proxy)
     
 
-    final_candidates = sequence_fitness_dataset.generate_dataset(network_weights, best_objective=best_objective, memory_aggressive=False)
+    final_candidates = sequence_fitness_dataset.generate_dataset(
+        network_weights, best_objective=best_objective, memory_aggressive=False, active_round=epoch
+    )
     top_trajectories = final_candidates 
     
     # Save sequences in csv file and pickle file 
@@ -231,7 +233,7 @@ def train_for_one_epoch_active_cycle(epoch: int, config: SequenceConfig, network
                                     custom_num_batches=config.num_batches_per_epoch, no_random=True, esm3_model=esm3_model, proxy=proxy)
 
         
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0, pin_memory=False, 
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0, pin_memory=False, 
                                 persistent_workers=False)
         
         scaler = torch.amp.GradScaler()
