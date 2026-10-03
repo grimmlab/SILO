@@ -45,13 +45,13 @@ class SequenceConfig:
         self.oracle_path = './objectives'
         self.active_learn_cycles = 10 # number of active learning rounds 
         self.multiplier = 5
-        self.min_max_mutations= [1, 3]
+        self.min_max_mutations= [1, 3] # min, max number of mutations to do per round
 
         # Training for policy 
         self.num_dataloader_workers = 3  # Number of workers for creating batches for training
         self.CUDA_VISIBLE_DEVICES = "0,1"  # Must be set, as ray can have problems detecting multiple GPUs
         self.batch_size_training = 16
-        self.num_epochs = 1
+        self.num_epochs = 1 #Number of epoches within each round for training
         self.num_batches_per_epoch = None  # Can be None, then we just do one pass through generated dataset
 
         # Optimizer for policy 
@@ -59,10 +59,6 @@ class SequenceConfig:
             "lr": 1e-4,  # learning rate
             "weight_decay": 0,
             "gradient_clipping": 1.,  # Clip gradient to given L2-norm. Set to 0 if no clipping should be performed.
-            "schedule": {
-                "decay_lr_every_epochs": 10,
-                "decay_factor": 0.8
-            }
         }
 
         self.log_to_file = True
