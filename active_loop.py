@@ -1,5 +1,4 @@
 import argparse, copy, os, time, ray, torch, datetime
-from torch.optim.lr_scheduler import LambdaLR
 from logger import Logger 
 import numpy as np
 from config import SequenceConfig
@@ -9,6 +8,7 @@ from model.transformer_architecture import SequenceTransformer, dict_to_cpu
 from sequence_evaluator import SequenceEvaluator
 from surrogate import ProxyModel
 from utils import save_checkpoint, train_for_one_epoch_active_cycle, MetricsTracker, set_seed, str2bool
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
 
 
 def parse_args():
@@ -17,7 +17,7 @@ def parse_args():
 
     parser.add_argument("--task",
                         type=str,
-                        default = 'AAV',
+                        default = 'Pab1',
                         choices=["AAV", "GFP", "TEM", "E4B", "UBE2I", "LGK", "Pab1", "AMIE"],
                         help="Specify benchmark task.")
     
@@ -79,7 +79,7 @@ def main(args):
 
     logger = Logger(config, config.results_path, config.log_to_file)
     logger.log_hyperparams(config)
-    set_seed(config.seed)
+    set_seed(config.seed, full_deterministic=True)
     esm3_model = ESM3(config)
     sequence_evaluator = SequenceEvaluator(config)
     seen_protein_smiles: dict[str, float] = {} # to remove duplicates 
