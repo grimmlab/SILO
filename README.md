@@ -104,18 +104,18 @@ This variable will be set as the env var of the same name in each worker. Defaul
 - `num_batches_per_epoch`: [int] Number of batches to use for supervised training during finetuning in each epoch. Can be `None`, then one pass through the current generated dataset is done.
 
 #### Learning algorithm for finetuning options
-- `self_improvement_learning`: [dict] These are the configs for the self-improvement learning part. We discuss the most important ones here. For more details, please refer to https://github.com/grimmlab/gumbeldore
-    - `num_trajectories_to_keep:` [int] Number of best designed sequences to keep, which are used for supervised training during finetuning. Default is 50.
-    - `keep_intermediate_trajectories`: [bool] If this is `True`, all designed sequences encountered in the trie are considered, not only the leaves.
-    - `devices_for_workers`: List[str] Number of parallel workers and on which devices their models live. Defaults to `["cuda:0"] * 1`.
-    - `batch_size_per_worker`: [int] If you start from a single problem instance, keep at 1. Defaults to 3
-    - `batch_size_per_cpu_worker`: [int] Same as above. This value is used for workers whose models live on the CPU. Default to 3.
-    - `search_type`: [str] Select `'wor'` for using stochastic beam search or `'beam_search'` for determinstic beam search
-    - `beam_width`: [int] Beam width for stochastic beam search. Defaults to 32. 
-    - `num_rounds`: Union[int, Tuple[int, int]]. Only relevant for `search_type='wor'`. If it's a single integer, we sample for this many rounds exactly. If it's an (int, int)-tuple, then we sample as long as it takes to obtain a new best sequence, but for a minimum of first entry rounds and a maximum of second entry rounds. Defaults to 1. 
-    - `deterministic`: [bool] Set to `True` to switch to deterministic beam seach.
-    - `nucleus_top_p`: [float] Top-p sampling nucleus size. Defaults to 1.0 (no nucleus sampling)
-    - `pin_workers_to_core`: [bool] Default to `False`. If `True`, workers are pinned to single CPU threads, which can help with many workers on the CPU to prevent them from jamming each other with their numpy and pytorch operations.
+- `self_improvement_learning`: [dict] These are the configs for the self-improvement learning part. We discuss the most important ones here. For more details, please refer to https://github.com/grimmlab/gumbeldore.
+- `num_trajectories_to_keep:` [int] Number of best designed sequences to keep, which are used for supervised training during finetuning. Default is 50.
+- `keep_intermediate_trajectories`: [bool] If this is `True`, all designed sequences encountered in the trie are considered, not only the leaves.
+- `devices_for_workers`: List[str] Number of parallel workers and on which devices their models live. Defaults to `["cuda:0"] * 1`.
+- `batch_size_per_worker`: [int] If you start from a single problem instance, keep at 1. Defaults to 3
+- `batch_size_per_cpu_worker`: [int] Same as above. This value is used for workers whose models live on the CPU. Default to 3.
+- `search_type`: [str] Select `'wor'` for using stochastic beam search or `'beam_search'` for determinstic beam search
+- `beam_width`: [int] Beam width for stochastic beam search. Defaults to 32. 
+- `num_rounds`: Union[int, Tuple[int, int]]. Only relevant for `search_type='wor'`. If it's a single integer, we sample for this many rounds exactly. If it's an (int, int)-tuple, then we sample as long as it takes to obtain a new best sequence, but for a minimum of first entry rounds and a maximum of second entry rounds. Defaults to 1. 
+- `deterministic`: [bool] Set to `True` to switch to deterministic beam seach.
+- `nucleus_top_p`: [float] Top-p sampling nucleus size. Defaults to 1.0 (no nucleus sampling)
+- `pin_workers_to_core`: [bool] Default to `False`. If `True`, workers are pinned to single CPU threads, which can help with many workers on the CPU to prevent them from jamming each other with their numpy and pytorch operations.
 
 ## Acknowledgments
 
