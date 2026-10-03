@@ -1,5 +1,5 @@
 
-import copy, os, sys, ray, torch 
+import copy, os, sys, random, ray, torch
 from model.transformer_architecture import SequenceTransformer
 from sequence_design import SequenceDesign
 import numpy as np
@@ -55,10 +55,12 @@ class SequenceFitnessDataset:
         self.proxy = proxy
 
 
-    def generate_dataset(self, network_weights: dict, best_objective: Optional[float] = None, memory_aggressive: bool = False):
+    def generate_dataset(self, network_weights: dict, best_objective: Optional[float] = None,
+                         memory_aggressive: bool = False, active_round: int = 0):
         """
         Parameters:
             network_weights: [dict] Network weights to use for generating data.
+            active_round: Active-learning round used with config.seed to seed sampling.
             memory_aggressive: [bool] If True, IncrementalSBS is performed "memory aggressive" meaning that
                 intermediate states in the search tree are not stored after transitioning from them, only their
                 policies.
@@ -90,7 +92,8 @@ class SequenceFitnessDataset:
         # Kick off workers
         future_tasks = [async_sbs_worker.remote
                         (self.config, job_pool, network_weights, device, batch_size_gpu if device != "cpu" else batch_size_cpu, 
-                                    cpu_cores[i], best_objective, memory_aggressive, esm3_model = self.esm3_model, proxy = self.proxy)
+                                    cpu_cores[i], best_objective, memory_aggressive, esm3_model = self.esm3_model, proxy = self.proxy,
+                                    active_round=active_round, worker_index=i)
             for i, device in enumerate(self.devices_for_workers)] 
 
         with tqdm(total=len(problem_instances)) as progress_bar:
@@ -170,6 +173,8 @@ def async_sbs_worker(config: Config, job_pool: JobPool, network_weights: dict,
                      memory_aggressive: bool = False, 
                      esm3_model = None, 
                      proxy = None, 
+                     active_round: int = 0,
+                     worker_index: int = 0,
                      ):
     def child_log_probability_fn(trajectories: List[SequenceDesign]) -> [np.array]:
         return SequenceDesign.log_probability_fn(config = config, trajectories=trajectories, network=network, device=device, esm3_model=esm3_model)
@@ -221,6 +226,12 @@ def async_sbs_worker(config: Config, job_pool: JobPool, network_weights: dict,
             # override ray's limiting of GPUs
             os.environ["CUDA_VISIBLE_DEVICES"] = config.CUDA_VISIBLE_DEVICES
 
+        # Ray workers are separate processes: initialize their RNGs before creating models.
+        worker_seed = int(np.random.SeedSequence([config.seed, active_round, worker_index]).generate_state(1)[0])
+        random.seed(worker_seed)
+        np.random.seed(worker_seed)
+        torch.manual_seed(worker_seed)
+
         device = torch.device(device)
         network = SequenceTransformer(config, config.training_device)
         network.load_state_dict(network_weights)
@@ -237,6 +248,12 @@ def async_sbs_worker(config: Config, job_pool: JobPool, network_weights: dict,
 
             idx_list = [i for i, _ in batch]
             root_nodes = [instance for _, instance in batch]
+            # JobPool indices are assigned before scheduling, so streams do not depend on
+            # which worker gets a job or on the batch size used by that worker.
+            root_rngs = [
+                np.random.default_rng(np.random.SeedSequence([config.seed, active_round, instance_id]))
+                for instance_id in idx_list
+            ]
 
             if config.self_improvement_learning["search_type"] == "beam_search":
                 # Deterministic beam search.
@@ -245,13 +262,15 @@ def async_sbs_worker(config: Config, job_pool: JobPool, network_weights: dict,
                     child_transition_fn=child_transition_fn,
                     root_states=root_nodes,
                     beam_width=config.self_improvement_learning["beam_width"],
-                    deterministic=True
+                    deterministic=True,
+                    root_rngs=root_rngs
                 )
             else:
                 inc_sbs = IncrementalSBS(config, root_nodes, child_log_probability_fn, child_transition_fn,
                                          leaf_evaluation_fn=SequenceDesign.to_max_evaluation_fn,
                                          batch_leaf_evaluation_fn=batch_leaf_evaluation_fn,
-                                         memory_aggressive=False)
+                                         memory_aggressive=False,
+                                         root_rngs=root_rngs)
                 
                 if config.self_improvement_learning["search_type"] == "wor":
                     beam_leaves_batch: List[List[sbs.BeamLeaf]] = inc_sbs.perform_incremental_sbs(
@@ -279,6 +298,5 @@ def async_sbs_worker(config: Config, job_pool: JobPool, network_weights: dict,
     del network
     del network_weights
     torch.cuda.empty_cache()
-
 
 
