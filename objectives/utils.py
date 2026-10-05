@@ -231,6 +231,8 @@ class AAVLandscape:
         else:
             if isinstance(sequences[0], dict):
                 seq_string = [seq['smiles'] for seq in sequences]
+            elif isinstance(sequences[0], str):
+                seq_string = sequences
             else:
                 seq_string = [(''.join(seq.seq_string)) for seq in sequences]
             single_input = False
@@ -249,10 +251,13 @@ class AAVLandscape:
             for seq, score in zip(sequences, fitnesses):
                 if isinstance(sequences[0], dict):
                     seq['objective_dict']['tape'] = score
+                elif isinstance(sequences[0], str):
+                    return np.array(fitnesses)
                 else:
                     seq.objective_dict['tape'] = score 
 
         return np.array(fitnesses)
+
 
 def oracle_fitness_scores(trajectories, objective_evaluator, 
                           seen_protein_smiles, config) -> np.array:
@@ -300,12 +305,17 @@ def best_candidates_for_oracle(sequences, oracle_budget):
 
 
 class NoisyLandscape:
-    def __init__(self, ensemble_size, snr, signal_variance, config):
+    def __init__(self, ensemble_size, snr, signal_variance, config, task):
         noise_std = self.calculate_noise_std(snr, signal_variance)
         self.config = config
-        self.oracle = [
-            TAPELandscape(self.config, self.config.oracle_path, noise=noise_std) for _ in range(ensemble_size)
-        ]
+        if task != 'AAV': 
+            self.oracle = [
+                TAPELandscape(self.config, self.config.oracle_path, noise=noise_std) for _ in range(ensemble_size)
+            ]
+        else:
+            self.oracle = [
+                AAVLandscape(oracle_path=self.config.oracle_path, noise=noise_std) for _ in range(ensemble_size)
+            ]
 
     def calculate_noise_std(self, snr, signal_variance):
         noise_var = signal_variance * 10 ** (-snr / 10)
