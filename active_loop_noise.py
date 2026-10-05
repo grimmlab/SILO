@@ -14,7 +14,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task",
                         type=str,
-                        default = 'AMIE',
+                        default = 'GFP',
                         choices=["AMIE", "E4B", "GFP", "AAV"],
                         help="Specify benchmark task.")
     parser.add_argument("--seed",
@@ -78,7 +78,7 @@ def main(args):
     dataset = RegressionDataset(config)
     signal_variance = np.var(np.concatenate([dataset.train_scores, dataset.valid_scores]))
     proxy = NoisyLandscape(ensemble_size=config.proxy_config['ensemble_size'], snr=args.noise_level, signal_variance=signal_variance,
-                           config=config)
+                           config=config, task= args.task)
     metric_logger = MetricsTracker(config, dataset)
 
     # Setup the policy network for training
